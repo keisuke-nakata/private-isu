@@ -22,7 +22,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/profile"
 )
+
+var profiler interface{ Stop() }
 
 var (
 	db    *sqlx.DB
@@ -791,6 +794,17 @@ func postAdminBanned(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/banned", http.StatusFound)
 }
 
+func getProfileStart(w http.ResponseWriter, r *http.Request) {
+	path := chi.URLParam(r, "path")
+	profiler = profile.Start(profile.ProfilePath(path))
+	w.WriteHeader(http.StatusOK)
+}
+
+func getProfileStop(w http.ResponseWriter, r *http.Request) {
+	profiler.Stop()
+	w.WriteHeader(http.StatusOK)
+}
+
 func main() {
 	log.Print("hello, first build!")
 
@@ -832,6 +846,10 @@ func main() {
 	defer db.Close()
 
 	r := chi.NewRouter()
+
+	// pprof
+	r.GET("/api/pprof/start", getProfileStart)
+	r.GET("/api/pprof/stop", getProfileStop)
 
 	r.Get("/initialize", getInitialize)
 	r.Get("/login", getLogin)
