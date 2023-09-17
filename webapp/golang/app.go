@@ -56,7 +56,7 @@ type Post struct {
 	CreatedAt    time.Time `db:"created_at"`
 	CommentCount int
 	Comments     []Comment
-	User         User
+	User         User `db:"u"`
 	CSRFToken    string
 }
 
@@ -208,19 +208,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		p.Comments = comments
 
-		err = db.Get(&p.User, "SELECT * FROM `users` WHERE `id` = ?", p.UserID)
-		if err != nil {
-			return nil, err
-		}
-
 		p.CSRFToken = csrfToken
-
-		if p.User.DelFlg == 0 {
-			posts = append(posts, p)
-		}
-		if len(posts) >= postsPerPage {
-			break
-		}
 	}
 
 	return posts, nil
@@ -390,7 +378,13 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 
 	results := []Post{}
 
-	err := db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` ORDER BY `created_at` DESC")
+	query := "SELECT " +
+		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+		"WHERE u.del_flg = 0 " +
+		"ORDER BY `created_at` DESC LIMIT ?"
+	err := db.Select(&results, query, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
@@ -436,7 +430,13 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 
 	results := []Post{}
 
-	err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `user_id` = ? ORDER BY `created_at` DESC", user.ID)
+	query := "SELECT " +
+		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+		"WHERE u.del_flg = 0 AND u.id = ? " +
+		"ORDER BY `created_at` DESC LIMIT ?"
+	err = db.Select(&results, query, user.ID, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
@@ -517,14 +517,20 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := time.Parse(ISO8601Format, maxCreatedAt)
+	_, err = time.Parse(ISO8601Format, maxCreatedAt)
 	if err != nil {
 		log.Print(err)
 		return
 	}
 
 	results := []Post{}
-	err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `created_at` <= ? ORDER BY `created_at` DESC", t.Format(ISO8601Format))
+	query := "SELECT " +
+		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+		"WHERE u.del_flg = 0 AND p.created_at <= ? " +
+		"ORDER BY `created_at` DESC LIMIT ?"
+	err = db.Select(&results, query, maxCreatedAt, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
@@ -560,7 +566,13 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
-	err = db.Select(&results, "SELECT * FROM `posts` WHERE `id` = ?", pid)
+	query := "SELECT " +
+		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+		"WHERE u.del_flg = 0 AND p.id = ? " +
+		"ORDER BY `created_at` DESC LIMIT ?"
+	err = db.Select(&results, query, pid, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
