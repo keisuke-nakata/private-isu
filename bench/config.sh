@@ -21,3 +21,5 @@ readonly NGINX_SITE_CONF_DEST=/etc/nginx/sites-available/isucon.conf
 
 readonly PPORF_DIR=/home/isucon/pprof
 readonly GO_PORT=8080
+
+readonly ALP_PATTERN='-m "/image/[0-9]+,/posts/[0-9]+,/@\w+"'

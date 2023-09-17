@@ -17,7 +17,7 @@ go tool pprof --pdf $PPORF_DIR/cpu.pprof > ${profile_result_dir}/prof.pdf
 # alp
 readonly alp_result_dir=$node_result_dir/alp
 mkdir -p $alp_result_dir
-sudo alp json --file $NGINX_ACCESS_LOG --sort=sum -r -m "/api/player/competition/.+/ranking,/api/player/player/.+,/api/organizer/competition/.+/score,/api/organizer/competition/.+/finish,/api/organizer/player/.+/disqualified" > $alp_result_dir/alp.txt
+sudo alp json --file $NGINX_ACCESS_LOG --sort=sum -r ${ALP_PATTERN} > $alp_result_dir/alp.txt
 
 # analyze mysql slow query log
 readonly mysql_result_dir=$node_result_dir/mysql
