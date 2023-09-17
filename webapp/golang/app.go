@@ -795,7 +795,7 @@ func postAdminBanned(w http.ResponseWriter, r *http.Request) {
 }
 
 func getProfileStart(w http.ResponseWriter, r *http.Request) {
-	path := chi.URLParam(r, "path")
+	path := r.URL.Query().Get("path")
 	profiler = profile.Start(profile.ProfilePath(path))
 	w.WriteHeader(http.StatusOK)
 }
