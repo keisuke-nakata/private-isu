@@ -44,5 +44,5 @@ sudo systemctl restart isu-go
 
 # start profile
 sleep 15
-mkdir ${PPORF_DIR}
+mkdir -p ${PPORF_DIR}
 curl "http://localhost:${GO_PORT}/api/pprof/start?path=${PPORF_DIR}/"

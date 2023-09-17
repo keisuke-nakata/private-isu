@@ -236,3 +236,9 @@ $ echo "|dt|score|commit id|change log|
 ```
 
 ### 自動化した bench を回してみる
+
+`bash bench/bench.sh`
+
+### ここから先は isucon 本に従って進める
+
+result/ dir の summary (change log) を見て何をやったか追ってください
