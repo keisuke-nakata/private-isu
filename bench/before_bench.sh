@@ -39,12 +39,12 @@ sudo systemctl reload nginx
   make
 )
 sudo systemctl restart isu-go
+sleep 5  # wait for restart webapp
 
 ###
 # prepare benchmark
 ###
 
 # start profile
-sleep 15
 mkdir -p ${PPORF_DIR}
 curl "http://localhost:${GO_PORT}/api/pprof/start?path=${PPORF_DIR}/"
