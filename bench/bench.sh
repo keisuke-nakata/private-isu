@@ -22,7 +22,7 @@ mkdir -p $result_dir
 ###
 # before bench
 ###
-cmd="cd ${REPO_ROOT_DIR} && git pull origin main && bash ${script_dir}/before_bench.sh"
+cmd="cd ${REPO_ROOT_DIR} && git pull origin main && cd ${script_dir} && bash before_bench.sh"
 # appserver 1 (this)
 bash -c "$cmd"
 # # appserver 2
@@ -50,21 +50,21 @@ git push origin main  # after bench は非常に重いので summay だけ先に
 ###
 # appserver 1 (this)
 node_result_dir=${result_dir}/appserver1
-cmd="cd ${REPO_ROOT_DIR} && git pull origin main && NODE_RESULT_DIR=${node_result_dir} bash ${script_dir}/after_bench.sh"
+cmd="cd ${REPO_ROOT_DIR} && git pull origin main && cd ${script_dir} && NODE_RESULT_DIR=${node_result_dir} bash after_bench.sh"
 bash -c "$cmd"
 git pull origin main
 git fetch
 git merge --no-edit "remotes/origin/auto${node_result_dir}"
 # # appserver 2
 # node_result_dir=${result_dir}/appserver2
-# cmd="cd ${REPO_ROOT_DIR} && git pull origin main && NODE_RESULT_DIR=${node_result_dir} bash ${script_dir}/after_bench.sh"
+# cmd="cd ${REPO_ROOT_DIR} && git pull origin main && cd ${script_dir} && NODE_RESULT_DIR=${node_result_dir} bash after_bench.sh"
 # ssh $APPSERVER2_PRIVATE_IP $cmd
 # git pull origin main
 # git fetch
 # git merge --no-edit "remotes/origin/auto${node_result_dir}"
 # appserver 3
 # node_result_dir=${result_dir}/appserver3
-# cmd="cd ${REPO_ROOT_DIR} && git pull origin main && NODE_RESULT_DIR=${node_result_dir} bash ${script_dir}/after_bench.sh"
+# cmd="cd ${REPO_ROOT_DIR} && git pull origin main && cd ${script_dir} && NODE_RESULT_DIR=${node_result_dir} bash after_bench.sh"
 # ssh $APPSERVER3_PRIVATE_IP $cmd
 # git pull origin main
 # git fetch
