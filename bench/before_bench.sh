@@ -1,3 +1,5 @@
+set -eux
+
 source "$(dirname "$0")/config.sh"
 
 ###
