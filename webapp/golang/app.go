@@ -848,8 +848,8 @@ func main() {
 	r := chi.NewRouter()
 
 	// pprof
-	r.GET("/api/pprof/start", getProfileStart)
-	r.GET("/api/pprof/stop", getProfileStop)
+	r.Get("/api/pprof/start", getProfileStart)
+	r.Get("/api/pprof/stop", getProfileStop)
 
 	r.Get("/initialize", getInitialize)
 	r.Get("/login", getLogin)
