@@ -1,4 +1,5 @@
 readonly REPO_ROOT_DIR=/home/isucon/private_isu
+readonly BENCH_SCRIPT_DIR=$REPO_ROOT_DIR/bench
 # readonly APPSERVER1_PRIVATE_IP=192.168.0.11
 # readonly APPSERVER2_PRIVATE_IP=192.168.0.12
 # readonly APPSERVER3_PRIVATE_IP=192.168.0.13

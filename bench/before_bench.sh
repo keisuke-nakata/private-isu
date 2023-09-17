@@ -1,5 +1,4 @@
-script_dir="$(dirname "$0")"
-source "${script_dir}/config.sh"
+source "$(dirname "$0")/config.sh"
 
 ###
 # refresh logs
