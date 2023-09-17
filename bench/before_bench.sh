@@ -24,9 +24,9 @@ sudo truncate --size 0 $MYSQL_SLOW_LOG
 sudo cp $MYSQL_CONF_SRC $MYSQL_CONF_DEST
 sudo systemctl restart mysql
 
-# # deploy memcached
+# deploy memcached
 # sudo cp $MEMCACHED_CONF_SRC $MEMCACHED_CONF_DEST
-# sudo systemctl restart memcached
+sudo systemctl restart memcached
 
 # deploy nginx
 sudo cp $NGINX_ROOT_CONF_SRC $NGINX_ROOT_CONF_DEST

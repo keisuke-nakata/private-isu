@@ -28,8 +28,9 @@ import (
 var profiler interface{ Stop() }
 
 var (
-	db    *sqlx.DB
-	store *gsm.MemcacheStore
+	db             *sqlx.DB
+	store          *gsm.MemcacheStore
+	memcacheClient *memcache.Client
 )
 
 const (
@@ -74,7 +75,7 @@ func init() {
 	if memdAddr == "" {
 		memdAddr = "localhost:11211"
 	}
-	memcacheClient := memcache.New(memdAddr)
+	memcacheClient = memcache.New(memdAddr)
 	store = gsm.NewMemcacheStore(memcacheClient, "iscogram_", []byte("sendagaya"))
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
@@ -180,9 +181,16 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	var posts []Post
 
 	for _, p := range results {
-		err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
-		if err != nil {
-			return nil, err
+		key := "comments." + strconv.Itoa(p.ID) + ".count"
+		cnt, err := memcacheClient.Get(key)
+		if err == nil { // cache hit
+			p.CommentCount, err = strconv.Atoi(string(cnt.Value))
+		} else { // cache miss
+			err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
+			if err != nil {
+				return nil, err
+			}
+			memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 60})
 		}
 
 		query := "SELECT * FROM `comments` WHERE `post_id` = ? ORDER BY `created_at` DESC"
