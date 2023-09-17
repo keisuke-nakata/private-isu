@@ -34,7 +34,7 @@ sudo systemctl reload nginx
 
 # deploy go
 (
-  cd $REPO_ROOT_DIR/golang
+  cd $REPO_ROOT_DIR/webapp/golang
   make
 )
 sudo systemctl restart isu-go

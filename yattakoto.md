@@ -228,3 +228,5 @@ $ mkdir result
 $ echo "|dt|score|commit id|change log|
 |--|--|--|--|" > result/summary.md
 ```
+
+### 自動化した bench を回してみる
