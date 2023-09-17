@@ -197,6 +197,12 @@ slow_query_log_file = /var/log/mysql/mysql-slow.log
 long_query_time = 0
 ```
 
+たまに mysql-slow.log が root の所有物になってて、mysql が書き込めなくなっていることがあるので、以下を実行しておく:
+
+```bash
+sudo chown mysql /var/log/mysql/mysql-slow.log
+```
+
 ### nginx 関連
 - `NGINX_ROOT_CONF_SRC=$CONF_DIR/nginx/nginx.conf` を、 `NGINX_ROOT_CONF_DEST=/etc/nginx/nginx.conf` からコピーして作成
 - 以下の設定を足す：
