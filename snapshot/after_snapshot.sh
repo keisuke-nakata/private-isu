@@ -1,8 +1,20 @@
-set -eux
+if [[ $# -ne 2 ]]; then
+  echo "Usage: $0 <node_result_dir> <branch name>"
+  exit 1
+fi
+readonly node_result_dir=$1
+readonly branch=$2
 
 source "$(dirname "$0")/config.sh"
 
-node_result_dir=$NODE_RESULT_DIR
+set -eux
+
+# prepare
+pushd ${REPO_ROOT_DIR}
+readonly old_working_branch=$(git branch --show-current)
+git fetch origin
+git checkout ${branch}
+git pull origin ${branch}
 
 ###
 # collect result
@@ -25,13 +37,16 @@ sudo alp json --file $NGINX_ACCESS_LOG --sort=sum -r -m ${ALP_PATTERN} > $alp_re
 readonly mysql_result_dir=$node_result_dir/mysql
 mkdir -p $mysql_result_dir
 sudo pt-query-digest $MYSQL_SLOW_LOG > $mysql_result_dir/pt-query-digest.txt
-# sudo gzip --best -c $MYSQL_SLOW_LOG > $mysql_result_dir/mysql-slow.log.gz  # 重すぎる
 
 # git push
 sudo chown -R isucon $node_result_dir
 sudo chgrp -R isucon $node_result_dir
 git checkout -b "auto${node_result_dir}"
 git add --all
-git commit -m "committed by after_bench.sh"
+git commit -m "committed by after_snapshot.sh"
 git push -u origin "auto${node_result_dir}"
-git checkout main
+git checkout "${RELEASE_BRANCH}"
+
+# cleanup
+git checkout "${old_working_branch}"
+popd
