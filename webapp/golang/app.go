@@ -57,7 +57,7 @@ type Post struct {
 	CreatedAt    time.Time `db:"created_at"`
 	CommentCount int
 	Comments     []Comment
-	User         User `db:"u"`
+	User         User `db:"user"`
 	CSRFToken    string
 }
 
@@ -391,7 +391,7 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 
 	query := "SELECT " +
 		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
 		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
 		"WHERE u.del_flg = 0 " +
 		"ORDER BY `created_at` DESC LIMIT ?"
@@ -443,7 +443,7 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 
 	query := "SELECT " +
 		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
 		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
 		"WHERE u.del_flg = 0 AND u.id = ? " +
 		"ORDER BY `created_at` DESC LIMIT ?"
@@ -537,7 +537,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	results := []Post{}
 	query := "SELECT " +
 		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
 		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
 		"WHERE u.del_flg = 0 AND p.created_at <= ? " +
 		"ORDER BY `created_at` DESC LIMIT ?"
@@ -579,7 +579,7 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 	results := []Post{}
 	query := "SELECT " +
 		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `u.id`, u.account_name AS `u.account_name`, u.passhash AS `u.passhash`, u.authority AS `u.authority`, u.del_flg AS `u.del_flg`, u.created_at AS `u.created_at` " +
+		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
 		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
 		"WHERE u.del_flg = 0 AND p.id = ? " +
 		"ORDER BY `created_at` DESC LIMIT ?"
