@@ -441,13 +441,6 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	me := getSessionUser(r)
 
 	results := []Post{}
-
-	// query := "SELECT " +
-	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-	// 	"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
-	// 	"WHERE u.del_flg = 0 " +
-	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
 		"id, user_id, body, mime, created_at " +
 		"FROM posts " +
@@ -511,16 +504,33 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 
 	results := []Post{}
 
+	// query := "SELECT " +
+	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
+	// 	"FROM posts AS p FORCE INDEX (posts_user_idx) JOIN users AS u ON (p.user_id = u.id) " +
+	// 	"WHERE u.del_flg = 0 AND p.user_id = ? " +
+	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
-		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-		"FROM posts AS p FORCE INDEX (posts_user_idx) JOIN users AS u ON (p.user_id = u.id) " +
-		"WHERE u.del_flg = 0 AND p.user_id = ? " +
+		"id, user_id, body, mime, created_at " +
+		"FROM posts " +
+		"WHERE del_flg = 0 AND user_id = ? " +
 		"ORDER BY created_at DESC LIMIT ?"
 	err = db.Select(&results, query, user.ID, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
+	}
+	userIDs := []int{}
+	for _, p := range results {
+		userIDs = append(userIDs, p.UserID)
+	}
+	userMap, err := makeUsers(userIDs)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for _, p := range results {
+		p.User = userMap[p.UserID]
 	}
 
 	posts, err := makePosts(results, getCSRFToken(r), false)
@@ -605,16 +615,33 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
+	// query := "SELECT " +
+	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
+	// 	"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+	// 	"WHERE u.del_flg = 0 AND p.created_at <= ? " +
+	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
-		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
-		"WHERE u.del_flg = 0 AND p.created_at <= ? " +
+		"id, user_id, body, mime, created_at " +
+		"FROM posts " +
+		"WHERE del_flg = 0 AND created_at <= ? " +
 		"ORDER BY created_at DESC LIMIT ?"
 	err = db.Select(&results, query, maxCreatedAt, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
+	}
+	userIDs := []int{}
+	for _, p := range results {
+		userIDs = append(userIDs, p.UserID)
+	}
+	userMap, err := makeUsers(userIDs)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for _, p := range results {
+		p.User = userMap[p.UserID]
 	}
 
 	posts, err := makePosts(results, getCSRFToken(r), false)
@@ -647,16 +674,33 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
+	// query := "SELECT " +
+	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
+	// 	"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+	// 	"WHERE u.del_flg = 0 AND p.id = ? " +
+	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
-		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
-		"WHERE u.del_flg = 0 AND p.id = ? " +
+		"id, user_id, body, mime, created_at " +
+		"FROM posts " +
+		"WHERE del_flg = 0 AND id = ? " +
 		"ORDER BY created_at DESC LIMIT ?"
 	err = db.Select(&results, query, pid, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
+	}
+	userIDs := []int{}
+	for _, p := range results {
+		userIDs = append(userIDs, p.UserID)
+	}
+	userMap, err := makeUsers(userIDs)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for _, p := range results {
+		p.User = userMap[p.UserID]
 	}
 
 	posts, err := makePosts(results, getCSRFToken(r), true)
