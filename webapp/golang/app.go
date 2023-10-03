@@ -228,7 +228,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			if err != nil {
 				return nil, err
 			}
-			memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 60})
+			memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
 		}
 
 		// key = "comments." + strconv.Itoa(p.ID) + "." + strconv.FormatBool(allComments)
@@ -262,7 +262,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			if err != nil {
 				return nil, err
 			}
-			memcacheClient.Set(&memcache.Item{Key: key, Value: cache_comment, Expiration: 60})
+			memcacheClient.Set(&memcache.Item{Key: key, Value: cache_comment, Expiration: 10})
 		}
 
 		p.Comments = comments
