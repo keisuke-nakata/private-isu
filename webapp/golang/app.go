@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	gsm "github.com/bradleypeabody/gorilla-sessions-memcache"
+	dbmemcache "github.com/dropbox/godropbox/memcache"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -29,9 +31,10 @@ import (
 var profiler interface{ Stop() }
 
 var (
-	db             *sqlx.DB
-	store          *gsm.MemcacheStore
-	memcacheClient *memcache.Client
+	db                    *sqlx.DB
+	store                 *gsm.MemcacheStore
+	memcacheClient        *memcache.Client
+	memcacheClientDropbox *dbmemcache.RawBinaryClient
 )
 
 const (
@@ -78,6 +81,8 @@ func init() {
 	}
 	memcacheClient = memcache.New(memdAddr)
 	store = gsm.NewMemcacheStore(memcacheClient, "iscogram_", []byte("sendagaya"))
+	conn, _ := net.Dial("tcp", memdAddr)
+	memcacheClientDropbox = dbmemcache.NewRawBinaryClient(0, conn).(*dbmemcache.RawBinaryClient)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
 
@@ -216,6 +221,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 		return nil, err
 	}
 
+	var sets []*dbmemcache.Item
 	for i, p := range results {
 		// key := "comments." + strconv.Itoa(p.ID) + ".count"
 		// cnt, err := memcacheClient.Get(key)
@@ -228,7 +234,8 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			if err != nil {
 				return nil, err
 			}
-			memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
+			sets = append(sets, &dbmemcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
+			// memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
 		}
 
 		// key = "comments." + strconv.Itoa(p.ID) + "." + strconv.FormatBool(allComments)
@@ -262,7 +269,8 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			if err != nil {
 				return nil, err
 			}
-			memcacheClient.Set(&memcache.Item{Key: key, Value: cache_comment, Expiration: 10})
+			sets = append(sets, &dbmemcache.Item{Key: key, Value: cache_comment, Expiration: 10})
+			// memcacheClient.Set(&memcache.Item{Key: key, Value: cache_comment, Expiration: 10})
 		}
 
 		p.Comments = comments
@@ -271,6 +279,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		posts = append(posts, p)
 	}
+	memcacheClientDropbox.SetMulti(sets)
 
 	return posts, nil
 }
