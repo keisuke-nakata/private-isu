@@ -1,0 +1,119 @@
+
+# 3.2s user time, 0 system time, 29.62M rss, 35.53M vsz
+# Current date: Tue Oct  3 17:57:26 2023
+# Hostname: ip-172-31-29-99
+# Files: /var/log/mysql/mysql-slow.log
+# Overall: 49.40k total, 25 unique, 796.74 QPS, 8.45x concurrency ________
+# Time range: 2023-10-03T08:55:59 to 2023-10-03T08:57:01
+# Attribute          total     min     max     avg     95%  stddev  median
+# ============     ======= ======= ======= ======= ======= ======= =======
+# Exec time           524s     1us   813ms    11ms     4ms    76ms   247us
+# Lock time           91ms       0     2ms     1us     1us    19us     1us
+# Rows sent        123.24k       0      23    2.55   11.95    3.82    0.99
+# Rows examine       8.47M       0  10.65k  179.88   31.70   1.29k    0.99
+# Query size         8.45M      17     442  179.30  400.73  173.09   62.76
+
+# Profile
+# Rank Query ID                      Response time  Calls R/Call V/M   Ite
+# ==== ============================= ============== ===== ====== ===== ===
+#    1 0xCA905EE7D4CE7FD4F1330CF7... 387.5764 74.0%   646 0.6000  0.01 SELECT posts users
+#    2 0x093BBD172E4EA56D1CADBDF6...  98.1359 18.7%   140 0.7010  0.01 SELECT posts users
+#    3 0x19759A5557089FD5B718D440...  22.7017  4.3% 17190 0.0013  0.00 SELECT posts
+# MISC 0xMISC                         15.3169  2.9% 31422 0.0005   0.0 <22 ITEMS>
+
+# Query 1: 10.59 QPS, 6.35x concurrency, ID 0xCA905EE7D4CE7FD4F1330CF7B2C3905E at byte 1061430
+# This item is included in the report because it matches --limit.
+# Scores: V/M = 0.01
+# Time range: 2023-10-03T08:56:00 to 2023-10-03T08:57:01
+# Attribute    pct   total     min     max     avg     95%  stddev  median
+# ============ === ======= ======= ======= ======= ======= ======= =======
+# Count          1     646
+# Exec time     74    388s    32ms   751ms   600ms   672ms    90ms   609ms
+# Lock time      1     1ms     1us   128us     2us     1us     6us     1us
+# Rows sent     10  12.62k      20      20      20      20       0      20
+# Rows examine  78   6.69M  10.56k  10.65k  10.60k  10.29k    0.00  10.29k
+# Query size     2 247.93k     393     393     393     393       0     393
+# String:
+# Databases    isuconp
+# Hosts        localhost
+# Users        isuconp
+# Query_time distribution
+#   1us
+#  10us
+# 100us
+#   1ms
+#  10ms  #
+# 100ms  ################################################################
+#    1s
+#  10s+
+# Tables
+#    SHOW TABLE STATUS FROM `isuconp` LIKE 'posts'\G
+#    SHOW CREATE TABLE `isuconp`.`posts`\G
+#    SHOW TABLE STATUS FROM `isuconp` LIKE 'users'\G
+#    SHOW CREATE TABLE `isuconp`.`users`\G
+# EXPLAIN /*!50100 PARTITIONS*/
+SELECT p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` FROM posts AS p JOIN users AS u ON (p.user_id = u.id) WHERE u.del_flg = 0 ORDER BY created_at DESC LIMIT 20\G
+
+# Query 2: 2.37 QPS, 1.66x concurrency, ID 0x093BBD172E4EA56D1CADBDF6451D8A22 at byte 16340997
+# This item is included in the report because it matches --limit.
+# Scores: V/M = 0.01
+# Time range: 2023-10-03T08:56:02 to 2023-10-03T08:57:01
+# Attribute    pct   total     min     max     avg     95%  stddev  median
+# ============ === ======= ======= ======= ======= ======= ======= =======
+# Count          0     140
+# Exec time     18     98s   395ms   813ms   701ms   777ms    62ms   672ms
+# Lock time      0   224us     1us     2us     1us     1us       0     1us
+# Rows sent      2   2.73k      20      20      20      20       0      20
+# Rows examine  16   1.43M  10.38k  10.59k  10.48k  10.29k       0  10.29k
+# Query size     0  60.29k     441     441     441     441       0     441
+# String:
+# Databases    isuconp
+# Hosts        localhost
+# Users        isuconp
+# Query_time distribution
+#   1us
+#  10us
+# 100us
+#   1ms
+#  10ms
+# 100ms  ################################################################
+#    1s
+#  10s+
+# Tables
+#    SHOW TABLE STATUS FROM `isuconp` LIKE 'posts'\G
+#    SHOW CREATE TABLE `isuconp`.`posts`\G
+#    SHOW TABLE STATUS FROM `isuconp` LIKE 'users'\G
+#    SHOW CREATE TABLE `isuconp`.`users`\G
+# EXPLAIN /*!50100 PARTITIONS*/
+SELECT p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` FROM posts AS p JOIN users AS u ON (p.user_id = u.id) WHERE u.del_flg = 0 AND p.created_at <= '2016-01-02T11:43:43+09:00' ORDER BY created_at DESC LIMIT 20\G
+
+# Query 3: 281.80 QPS, 0.37x concurrency, ID 0x19759A5557089FD5B718D440CBBB5C55 at byte 2251482
+# This item is included in the report because it matches --limit.
+# Scores: V/M = 0.00
+# Time range: 2023-10-03T08:56:00 to 2023-10-03T08:57:01
+# Attribute    pct   total     min     max     avg     95%  stddev  median
+# ============ === ======= ======= ======= ======= ======= ======= =======
+# Count         34   17190
+# Exec time      4     23s   109us    67ms     1ms     5ms     2ms   568us
+# Lock time     37    34ms       0     2ms     1us     1us    21us     1us
+# Rows sent     13  16.79k       1       1       1       1       0       1
+# Rows examine   0  16.79k       1       1       1       1       0       1
+# Query size     7 653.45k      36      40   38.93   38.53    0.49   38.53
+# String:
+# Databases    isuconp
+# Hosts        localhost
+# Users        isuconp
+# Query_time distribution
+#   1us
+#  10us
+# 100us  ################################################################
+#   1ms  #################################
+#  10ms  #
+# 100ms
+#    1s
+#  10s+
+# Tables
+#    SHOW TABLE STATUS FROM `isuconp` LIKE 'posts'\G
+#    SHOW CREATE TABLE `isuconp`.`posts`\G
+# EXPLAIN /*!50100 PARTITIONS*/
+SELECT * FROM `posts` WHERE `id` = 945\G
