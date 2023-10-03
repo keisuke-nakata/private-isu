@@ -222,6 +222,11 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	}
 
 	var sets []*dbmemcache.Item
+	type PostIDIndex struct {
+		PostID int
+		Index  int
+	}
+	var missingCountPostIDs []PostIDIndex
 	for i, p := range results {
 		// key := "comments." + strconv.Itoa(p.ID) + ".count"
 		// cnt, err := memcacheClient.Get(key)
@@ -236,6 +241,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			}
 			sets = append(sets, &dbmemcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
 			// memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
+			missingCountPostIDs = append(missingCountPostIDs, PostIDIndex{PostID: p.ID, Index: i})
 		}
 
 		// key = "comments." + strconv.Itoa(p.ID) + "." + strconv.FormatBool(allComments)
@@ -279,6 +285,10 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		posts = append(posts, p)
 	}
+
+	for _, {PostID: postID, Index: index} := range missingCountPostIDs {
+
+
 	memcacheClientDropbox.SetMulti(sets)
 
 	return posts, nil
