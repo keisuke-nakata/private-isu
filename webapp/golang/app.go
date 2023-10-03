@@ -88,6 +88,11 @@ func dbInitialize() {
 		"DELETE FROM comments WHERE id > 100000",
 		"UPDATE users SET del_flg = 0",
 		"UPDATE users SET del_flg = 1 WHERE id % 50 = 0",
+		// ↑ system defined initialization
+		// ↓ user defined initialization
+		"ALTER TABLE posts DROP del_flg",
+		"ALTER TABLE posts ADD del_flg tinyint(1) NOT NULL DEFAULT '0'",
+		"UPDATE posts SET del_flg = 1 WHERE user_id % 50 = 0",
 		"ALTER TABLE comments ADD INDEX idx_post_id_created_at (post_id, created_at DESC)",
 		"ALTER TABLE comments ADD INDEX idx_user_id (user_id)",
 		"ALTER TABLE posts ADD INDEX posts_user_idx (user_id, created_at DESC)",
@@ -96,6 +101,21 @@ func dbInitialize() {
 	for _, sql := range sqls {
 		db.Exec(sql)
 	}
+}
+
+func NamedInSql(query string, arg map[string]interface{}) (string, []interface{}, error) {
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return "", nil, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return "", nil, err
+	}
+	query = db.Rebind(query)
+
+	return query, args, err
 }
 
 func tryLogin(accountName, password string) *User {
@@ -235,6 +255,23 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	}
 
 	return posts, nil
+}
+
+func makeUsers(userIDs []int) ([]User, error) {
+	query := "SELECT * FROM `users` WHERE `id` IN (:userIDs) ORDER BY FIELD(id, :userIDs)"
+	input := map[string]interface{}{
+		"userIDs": userIDs,
+	}
+	query, args, err := NamedInSql(query, input)
+	if err != nil {
+		return nil, err
+	}
+	var users []User
+	err = db.Select(&users, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }
 
 func imageURL(p Post) string {
@@ -401,16 +438,33 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 
 	results := []Post{}
 
+	// query := "SELECT " +
+	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
+	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
+	// 	"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
+	// 	"WHERE u.del_flg = 0 " +
+	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
-		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-		"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-		"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
-		"WHERE u.del_flg = 0 " +
+		"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at " +
+		"FROM posts AS p" +
+		"WHERE p.del_flg = 0 " +
 		"ORDER BY created_at DESC LIMIT ?"
 	err := db.Select(&results, query, postsPerPage)
 	if err != nil {
 		log.Print(err)
 		return
+	}
+	userIDs := []int{}
+	for _, p := range results {
+		userIDs = append(userIDs, p.UserID)
+	}
+	users, err := makeUsers(userIDs)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for i, p := range results {
+		p.User = users[i]
 	}
 
 	posts, err := makePosts(results, getCSRFToken(r), false)
@@ -832,7 +886,8 @@ func postAdminBanned(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := "UPDATE `users` SET `del_flg` = ? WHERE `id` = ?"
+	queryUsers := "UPDATE `users` SET `del_flg` = ? WHERE `id` = ?"
+	queryPosts := "UPDATE `posts` SET `del_flg` = ? WHERE `user_id` = ?"
 
 	err := r.ParseForm()
 	if err != nil {
@@ -841,7 +896,8 @@ func postAdminBanned(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, id := range r.Form["uid[]"] {
-		db.Exec(query, 1, id)
+		db.Exec(queryUsers, 1, id)
+		db.Exec(queryPosts, 1, id)
 	}
 
 	http.Redirect(w, r, "/admin/banned", http.StatusFound)
