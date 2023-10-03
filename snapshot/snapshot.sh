@@ -12,11 +12,10 @@ set -eux
 # prepare
 pushd "${REPO_ROOT_DIR}"
 readonly old_working_branch=$(git branch --show-current)
-
-# get latest changes
 git fetch origin
 git checkout "${branch}"
 git pull origin "${branch}"
+
 readonly commit_id=$(git rev-parse HEAD)
 
 # create result dir
@@ -81,7 +80,6 @@ set +x
 bash -c "$cmd"
 set -x
 git checkout "${RESULT_BRANCH}"
-git fetch origin
 git merge --no-edit "remotes/origin/auto${node_result_dir}"
 # # appserver 2
 # node_result_dir=${result_dir}/appserver2
