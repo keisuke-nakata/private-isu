@@ -446,7 +446,7 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
 		"id, user_id, body, mime, created_at " +
-		"FROM posts" +
+		"FROM posts " +
 		"WHERE del_flg = 0 " +
 		"ORDER BY created_at DESC LIMIT ?"
 	err := db.Select(&results, query, postsPerPage)
