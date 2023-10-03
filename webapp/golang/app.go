@@ -257,8 +257,8 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	return posts, nil
 }
 
-func makeUsers(userIDs []int) ([]User, error) {
-	query := "SELECT * FROM `users` WHERE `id` IN (:userIDs) ORDER BY FIELD(id, :userIDs)"
+func makeUsers(userIDs []int) (map[int]User, error) {
+	query := "SELECT * FROM `users` WHERE `id` IN (:userIDs)"
 	input := map[string]interface{}{
 		"userIDs": userIDs,
 	}
@@ -271,7 +271,11 @@ func makeUsers(userIDs []int) ([]User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return users, nil
+	userMap := map[int]User{}
+	for _, u := range users {
+		userMap[u.ID] = u
+	}
+	return userMap, nil
 }
 
 func imageURL(p Post) string {
@@ -458,13 +462,13 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	for _, p := range results {
 		userIDs = append(userIDs, p.UserID)
 	}
-	users, err := makeUsers(userIDs)
+	userMap, err := makeUsers(userIDs)
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	for i, p := range results {
-		p.User = users[i]
+	for _, p := range results {
+		p.User = userMap[p.UserID]
 	}
 
 	posts, err := makePosts(results, getCSRFToken(r), false)
