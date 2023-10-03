@@ -195,11 +195,34 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []Post
 
+	commentCountKeys := make([]string, len(results))
+	commentKeys := make([]string, len(results))
 	for _, p := range results {
-		key := "comments." + strconv.Itoa(p.ID) + ".count"
-		cnt, err := memcacheClient.Get(key)
-		if err == nil { // cache hit
-			p.CommentCount, err = strconv.Atoi(string(cnt.Value))
+		commentCountKeys = append(
+			commentCountKeys,
+			"comments."+strconv.Itoa(p.ID)+".count",
+		)
+		commentKeys = append(
+			commentKeys,
+			"comments."+strconv.Itoa(p.ID)+"."+strconv.FormatBool(allComments),
+		)
+	}
+	cache_cnts, err := memcacheClient.GetMulti(commentCountKeys)
+	if err != nil {
+		return nil, err
+	}
+	cache_comments, err := memcacheClient.GetMulti(commentKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, p := range results {
+		// key := "comments." + strconv.Itoa(p.ID) + ".count"
+		// cnt, err := memcacheClient.Get(key)
+		key := commentCountKeys[i]
+		cache_cnt, ok := cache_cnts[key]
+		if ok { // cache hit
+			p.CommentCount, err = strconv.Atoi(string(cache_cnt.Value))
 		} else { // cache miss
 			err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
 			if err != nil {
@@ -208,11 +231,13 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 60})
 		}
 
-		key = "comments." + strconv.Itoa(p.ID) + "." + strconv.FormatBool(allComments)
-		var comments []Comment
-		data, err := memcacheClient.Get(key)
-		if err == nil { // cache hit
-			err = json.Unmarshal(data.Value, &comments)
+		// key = "comments." + strconv.Itoa(p.ID) + "." + strconv.FormatBool(allComments)
+		comments := make([]Comment, 3)
+		// data, err := memcacheClient.Get(key)
+		key = commentKeys[i]
+		cache_comment, ok := cache_comments[key]
+		if ok { // cache hit
+			err = json.Unmarshal(cache_comment.Value, &comments)
 		} else { // cache miss
 			query := "SELECT " +
 				"c.id AS id, c.post_id AS post_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at, " +
@@ -233,11 +258,11 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 				comments[i], comments[j] = comments[j], comments[i]
 			}
 
-			data2, err := json.Marshal(comments)
+			cache_comment, err := json.Marshal(comments)
 			if err != nil {
 				return nil, err
 			}
-			memcacheClient.Set(&memcache.Item{Key: key, Value: data2, Expiration: 60})
+			memcacheClient.Set(&memcache.Item{Key: key, Value: cache_comment, Expiration: 60})
 		}
 
 		p.Comments = comments
