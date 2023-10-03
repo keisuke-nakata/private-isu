@@ -2,6 +2,7 @@ package main
 
 import (
 	crand "crypto/rand"
+	"crypto/sha512"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -10,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
@@ -146,13 +146,15 @@ func escapeshellarg(arg string) string {
 
 func digest(src string) string {
 	// opensslのバージョンによっては (stdin)= というのがつくので取る
-	out, err := exec.Command("/bin/bash", "-c", `printf "%s" `+escapeshellarg(src)+` | openssl dgst -sha512 | sed 's/^.*= //'`).Output()
-	if err != nil {
-		log.Print(err)
-		return ""
-	}
+	// out, err := exec.Command("/bin/bash", "-c", `printf "%s" `+escapeshellarg(src)+` | openssl dgst -sha512 | sed 's/^.*= //'`).Output()
+	// if err != nil {
+	// 	log.Print(err)
+	// 	return ""
+	// }
 
-	return strings.TrimSuffix(string(out), "\n")
+	// return strings.TrimSuffix(string(out), "\n")
+	out := sha512.Sum512([]byte(src))
+	return fmt.Sprintf("%x", out)
 }
 
 func calculateSalt(accountName string) string {
@@ -503,13 +505,6 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
-
-	// query := "SELECT " +
-	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-	// 	"FROM posts AS p FORCE INDEX (posts_user_idx) JOIN users AS u ON (p.user_id = u.id) " +
-	// 	"WHERE u.del_flg = 0 AND p.user_id = ? " +
-	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
 		"id, user_id, body, mime, created_at " +
 		"FROM posts " +
@@ -615,12 +610,6 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
-	// query := "SELECT " +
-	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-	// 	"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
-	// 	"WHERE u.del_flg = 0 AND p.created_at <= ? " +
-	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
 		"id, user_id, body, mime, created_at " +
 		"FROM posts " +
@@ -674,12 +663,6 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results := []Post{}
-	// query := "SELECT " +
-	// 	"p.id AS id, p.user_id AS user_id, p.body AS body, p.mime AS mime, p.created_at AS created_at, " +
-	// 	"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
-	// 	"FROM posts AS p JOIN users AS u ON (p.user_id = u.id) " +
-	// 	"WHERE u.del_flg = 0 AND p.id = ? " +
-	// 	"ORDER BY created_at DESC LIMIT ?"
 	query := "SELECT " +
 		"id, user_id, body, mime, created_at " +
 		"FROM posts " +
