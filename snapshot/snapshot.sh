@@ -58,8 +58,8 @@ read score
 # result branch に最新の main branch をマージ
 git fetch origin
 git checkout "${RESULT_BRANCH}"
-git pull origin "${RELEASE_BRANCH}"
-git checkout "${branch}"
+git merge --no-edit "remotes/origin/${RELEASE_BRANCH}"
+# git pull origin "${RELEASE_BRANCH}"
 # 実行対象が main ブランチである場合のみ、result ブランチで summary.md に記録。それ以外のブランチだとコンフリクトが発生するため何もしない
 if [[ "${branch}" == "${RELEASE_BRANCH}" ]]; then
 	git checkout "${RESULT_BRANCH}"
@@ -67,8 +67,8 @@ if [[ "${branch}" == "${RELEASE_BRANCH}" ]]; then
 	git add --all
 	git commit -m "${commit_id}" -m "committed by snapshot.sh"
 	git push origin "${RESULT_BRANCH}" # after snapshot は非常に重いので summay だけ先に push
-	git checkout "${branch}"
 fi
+git checkout "${branch}"
 
 ###
 # run after_snapshot.sh
