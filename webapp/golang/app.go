@@ -74,6 +74,11 @@ type Comment struct {
 	User      User      `db:"user"`
 }
 
+type CommentCount struct {
+	PostID int `db:"post_id"`
+	Count  int `db:"count"`
+}
+
 func init() {
 	memdAddr := os.Getenv("ISUCONP_MEMCACHED_ADDRESS")
 	if memdAddr == "" {
@@ -222,6 +227,8 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	}
 
 	var sets []*dbmemcache.Item
+	var missingCountPostIDs []int
+	var missingCountIndices []int
 	for i, p := range results {
 		// key := "comments." + strconv.Itoa(p.ID) + ".count"
 		// cnt, err := memcacheClient.Get(key)
@@ -230,11 +237,13 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 		if ok { // cache hit
 			p.CommentCount, err = strconv.Atoi(string(cache_cnt.Value))
 		} else { // cache miss
-			err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
-			if err != nil {
-				return nil, err
-			}
-			sets = append(sets, &dbmemcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
+			missingCountPostIDs = append(missingCountPostIDs, p.ID)
+			missingCountIndices = append(missingCountIndices, i)
+			// err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			// sets = append(sets, &dbmemcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
 			// memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
 		}
 
@@ -279,6 +288,17 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 		posts = append(posts, p)
 	}
+
+	commentCountMap, err := makeCommentCount(missingCountPostIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range missingCountIndices {
+		postID := missingCountPostIDs[i]
+		posts[i].CommentCount = commentCountMap[postID].Count
+		sets = append(sets, &dbmemcache.Item{Key: commentCountKeys[i], Value: []byte(strconv.Itoa(posts[i].CommentCount)), Expiration: 10})
+	}
+
 	memcacheClientDropbox.SetMulti(sets)
 
 	return posts, nil
@@ -303,6 +323,27 @@ func makeUsers(userIDs []int) (map[int]User, error) {
 		userMap[u.ID] = u
 	}
 	return userMap, nil
+}
+
+func makeCommentCount(postIDs []int) (map[int]CommentCount, error) {
+	query := "SELECT `post_id`, COUNT(*) AS `count` FROM `comments` WHERE `post_id` IN (:postIDs) GROUP BY `post_id`"
+	input := map[string]interface{}{
+		"postIDs": postIDs,
+	}
+	query, args, err := NamedInSql(query, input)
+	if err != nil {
+		return nil, err
+	}
+	var commentCounts []CommentCount
+	err = db.Select(&commentCounts, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	commentCountMap := map[int]CommentCount{}
+	for _, cc := range commentCounts {
+		commentCountMap[cc.PostID] = cc
+	}
+	return commentCountMap, nil
 }
 
 func imageURL(p Post) string {
