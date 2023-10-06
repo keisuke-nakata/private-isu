@@ -204,11 +204,11 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 
 func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []*Post
-	// var ret []Post
+	var ret []Post
 	for _, p := range results {
 		p.CSRFToken = csrfToken
 		posts = append(posts, &p)
-		// ret = append(ret, p)
+		ret = append(ret, p)
 	}
 
 	commentCountKeys := make([]string, len(results))
@@ -240,7 +240,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	var sets []*dbmemcache.Item
 	// var missingCountPostIDs []int
 	// var missingCountIndices []int
-	for i, p := range results {
+	for i, p := range ret {
 		// // key := "comments." + strconv.Itoa(p.ID) + ".count"
 		// // cnt, err := memcacheClient.Get(key)
 		// key := commentCountKeys[i]
@@ -312,7 +312,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 
 	memcacheClientDropbox.SetMulti(sets)
 
-	return results, nil
+	return ret, nil
 }
 
 func fillCommentCount(posts []*Post) error {
