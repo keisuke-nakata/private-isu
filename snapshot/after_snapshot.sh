@@ -24,7 +24,7 @@ mkdir -p $node_result_dir
 # memcached
 readonly memcached_result_dir=$node_result_dir/memcached
 mkdir -p $memcached_result_dir
-(sleep 0.5; echo stats) | telnet localhost $MEMCACHED_PORT > $memcached_result_dir/stats.txt
+(echo "stats"; sleep 0.1; echo -e '\x1dclose\x0d';) | telnet localhost $MEMCACHED_PORT > $memcached_result_dir/stats.txt
 
 # stop profile & analyze
 curl "http://localhost:${GO_PORT}/api/pprof/stop"
