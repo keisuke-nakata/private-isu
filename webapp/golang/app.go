@@ -223,10 +223,6 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 			"comments."+strconv.Itoa(p.ID)+"."+strconv.FormatBool(allComments),
 		)
 	}
-	// cache_cnts, err := memcacheClient.GetMulti(commentCountKeys)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	cache_comments, err := memcacheClient.GetMulti(commentKeys)
 	if err != nil {
 		return nil, err
@@ -238,29 +234,8 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 	}
 
 	var sets []*dbmemcache.Item
-	// var missingCountPostIDs []int
-	// var missingCountIndices []int
 	for i, p := range ret {
-		// // key := "comments." + strconv.Itoa(p.ID) + ".count"
-		// // cnt, err := memcacheClient.Get(key)
-		// key := commentCountKeys[i]
-		// cache_cnt, ok := cache_cnts[key]
-		// if ok { // cache hit
-		// 	p.CommentCount, err = strconv.Atoi(string(cache_cnt.Value))
-		// } else { // cache miss
-		// 	missingCountPostIDs = append(missingCountPostIDs, p.ID)
-		// 	missingCountIndices = append(missingCountIndices, i)
-		// 	// err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
-		// 	// if err != nil {
-		// 	// 	return nil, err
-		// 	// }
-		// 	// sets = append(sets, &dbmemcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
-		// 	// memcacheClient.Set(&memcache.Item{Key: key, Value: []byte(strconv.Itoa(p.CommentCount)), Expiration: 10})
-		// }
-
-		// key = "comments." + strconv.Itoa(p.ID) + "." + strconv.FormatBool(allComments)
 		comments := make([]Comment, 3)
-		// data, err := memcacheClient.Get(key)
 		key := commentKeys[i]
 		cache_comment, ok := cache_comments[key]
 		if ok { // cache hit
@@ -294,21 +269,7 @@ func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, erro
 		}
 
 		p.Comments = comments
-
-		// p.CSRFToken = csrfToken
-
-		// posts = append(posts, p)
 	}
-
-	// commentCountMap, err := makeCommentCount(missingCountPostIDs)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// for _, i := range missingCountIndices {
-	// 	postID := missingCountPostIDs[i]
-	// 	posts[i].CommentCount = commentCountMap[postID].Count
-	// 	sets = append(sets, &dbmemcache.Item{Key: commentCountKeys[i], Value: []byte(strconv.Itoa(posts[i].CommentCount)), Expiration: 10})
-	// }
 
 	memcacheClientDropbox.SetMulti(sets)
 
@@ -366,6 +327,76 @@ func fillCommentCount(posts []*Post) error {
 
 	return nil
 }
+
+// func fillComment(posts []*Post, allComments bool) error {
+// 	commentKeys := make([]string, len(posts))
+// 	for _, p := range posts {
+// 		commentKeys = append(
+// 			commentKeys,
+// 			"comments."+strconv.Itoa(p.ID)+"."+strconv.FormatBool(allComments),
+// 		)
+// 	}
+// 	cache_comments, err := memcacheClient.GetMulti(commentKeys)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	var missingCommentPostIDs []int
+// 	var missingCommentIndices []int
+// 	commentMap := make(map[int][]Comment, len(posts))
+// 	for i, p := range posts {
+// 		key := commentKeys[i]
+// 		cache_comment, ok := cache_comments[key]
+// 		comments := make([]Comment, 3)
+// 		if ok { // cache hit
+// 			err = json.Unmarshal(cache_comment.Value, &comments)
+// 		} else { // cache miss
+// 			missingCommentPostIDs = append(missingCommentPostIDs, p.ID)
+// 			missingCommentIndices = append(missingCommentIndices, i)
+// 		}
+// 	}
+
+// 	var sets []*dbmemcache.Item
+// 	for i, p := range ret {
+// 		comments := make([]Comment, 3)
+// 		key := commentKeys[i]
+// 		cache_comment, ok := cache_comments[key]
+// 		if ok { // cache hit
+// 			err = json.Unmarshal(cache_comment.Value, &comments)
+// 		} else { // cache miss
+// 			query := "SELECT " +
+// 				"c.id AS id, c.post_id AS post_id, c.user_id AS user_id, c.comment AS comment, c.created_at AS created_at, " +
+// 				"u.id AS `user.id`, u.account_name AS `user.account_name`, u.passhash AS `user.passhash`, u.authority AS `user.authority`, u.del_flg AS `user.del_flg`, u.created_at AS `user.created_at` " +
+// 				"FROM comments AS c JOIN users AS u " +
+// 				"ON c.user_id = u.id " +
+// 				"WHERE c.post_id = ? " +
+// 				"ORDER BY c.created_at DESC"
+// 			if !allComments {
+// 				query += " LIMIT 3"
+// 			}
+// 			err = db.Select(&comments, query, p.ID)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			// reverse
+// 			for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
+// 				comments[i], comments[j] = comments[j], comments[i]
+// 			}
+
+// 			cache_comment, err := json.Marshal(comments)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			sets = append(sets, &dbmemcache.Item{Key: key, Value: cache_comment, Expiration: 10})
+// 			// memcacheClient.Set(&memcache.Item{Key: key, Value: cache_comment, Expiration: 10})
+// 		}
+
+// 		p.Comments = comments
+// 	}
+
+// 	memcacheClientDropbox.SetMulti(sets)
+
+// 	return ret, nil
+// }
 
 func makeUsers(userIDs []int) (map[int]User, error) {
 	query := "SELECT * FROM `users` WHERE `id` IN (:userIDs)"
