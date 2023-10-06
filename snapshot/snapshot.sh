@@ -60,7 +60,6 @@ git fetch origin
 git checkout "${RESULT_BRANCH}"
 git merge --no-edit "remotes/origin/${RELEASE_BRANCH}"
 # git merge --no-ff "remotes/origin/${RELEASE_BRANCH}"
-# git pull origin "${RELEASE_BRANCH}"
 # 実行対象が main ブランチである場合のみ、result ブランチで summary.md に記録。それ以外のブランチだとコンフリクトが発生するため何もしない
 if [[ "${branch}" == "${RELEASE_BRANCH}" ]]; then
 	git checkout "${RESULT_BRANCH}"
